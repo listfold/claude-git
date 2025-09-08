@@ -14,4 +14,4 @@ import pytest
 
 if __name__ == "__main__":
     # Run pytest with all test files
-    sys.exit(pytest.main(["-v", "test_session_start.py", "test_shared_sagas.py"]))
+    sys.exit(pytest.main(["-v", "tests/"]))

@@ -14,4 +14,4 @@ import pytest
 
 if __name__ == "__main__":
     # Run pytest with the test file
-    sys.exit(pytest.main(["-v", "test_session_start.py"]))
+    sys.exit(pytest.main(["-v", "tests/test_session_start.py"]))
