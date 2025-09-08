@@ -1,37 +1,43 @@
 # claude-git
 
-A comprehensive git integration for Claude Code that tracks AI-assisted changes in a separate shadow worktree, maintaining a complete audit trail without polluting your main repository history.
+A git integration for Claude Code that tracks AI-agent changes in a separate shadow worktree.
 
-## Overview
+Built using the [claude-saga](https://pypi.org/project/claude-saga/) framework for reliable effect-based programming.
 
-claude-git provides three integrated components that work together:
+## Core Features
 
-1. **Automatic Tracking Hooks** - Track Claude's changes in a shadow worktree
-2. **Undo Slash Command** - Reverse Claude's changes when needed  
-3. **Complete Audit Trail** - Full history of AI modifications separate from your main branch
+claude-git works by creating a worktree (essentially a clone of your git repo, with its own git-history).
+
+Any changes made by claude-code to the main repo are also made in the shadow worktree as discreet commits.
+
+Importantly the main-repo's git history is untouched, while the shadow worktree records each change as a commit.
+
+With this system in place claude-git enables some nifty features:
+
+1. **Automatic Change Tracking** - Comprehensive audit trail of AI modifications in separate worktrees
+2. **Local Tool Integration** - Fast, energy-efficient operations using git instead of LLM calls  
+3. **Multi-Agent & Human-Agent Coordination** - Git can be the foundation for multiple AI agents to collaborate on shared codebases (just like humans).
+4. **Dataset Generation** - Export AI-assisted changes for training data and analysis
+5. **Advanced Workflows** - Cherry-picking, branching, and merging AI changes independently
+
+## Why Git Integration?
+
+**Local > Remote**: The `/undo` command demonstrates the power of local tooling - it uses git operations instead of asking the LLM to reverse its changes. This approach is:
+
+- ⚡ **Faster** - No network roundtrips or LLM processing time
+- 🔋 **Energy Efficient** - No electricity used for model inference  
+- 💰 **Cost Effective** - Saves Claude usage for more important tasks
+- 🎯 **Precise** - Exact reversal of changes without interpretation errors
+- 🔧 **Extensible** - Enables building sophisticated local workflows using the power of git
 
 ## How It Works
 
-### Component Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│  SessionStart   │    │   PostToolUse    │    │  Undo Command   │
-│      Hook       │    │      Hook        │    │   (/undo)       │
-├─────────────────┤    ├──────────────────┤    ├─────────────────┤
-│ • Validate git  │    │ • Detect changes │    │ • Analyze N     │
-│ • Create shadow │    │ • Apply to shadow│    │   commits       │  
-│ • Sync main→    │    │ • Commit changes │    │ • Generate      │
-│   shadow        │    │ • Track tools    │    │   reverse patch │
-└─────────────────┘    └──────────────────┘    │ • Apply to main │
-                                               └─────────────────┘
-```
-
 ### Workflow
 
-1. **Session Start**: Claude Code starts → SessionStart hook creates/syncs shadow worktree
-2. **During Session**: Claude modifies files → PostToolUse hook commits changes to shadow worktree  
-3. **Undo (Optional)**: User runs `/undo N` → Reverse last N Claude changes in main repository
+1. **Session Start**: Claude Code starts → Git validation + shadow worktree creation/sync
+2. **During Session**: Claude modifies files → Changes committed to shadow worktree with metadata  
+3. **Local Operations**: User runs local commands (e.g. `/undo N`) → Fast git-based operations
+4. **Multi-Agent Ready**: Foundation supports coordination between multiple AI agents
 
 ### Directory Structure
 
@@ -120,9 +126,9 @@ Once configured, claude-git works automatically:
 2. **Claude modifies files** → Changes automatically committed to shadow worktree
 3. **Continue working** → All Claude changes tracked separately
 
-### Manual Undo Operations
+### Local Git Operations (Example: Undo)
 
-Use the `/undo` slash command to reverse Claude's changes:
+The `/undo` slash command showcases **local-first tooling** - fast git operations instead of slow LLM calls:
 
 ```bash
 /undo           # Undo last change
@@ -130,14 +136,21 @@ Use the `/undo` slash command to reverse Claude's changes:
 /undo 10        # Undo last 10 changes
 ```
 
-**How undo works:**
-1. Analyzes the last N commits in the shadow worktree
-2. Generates a reverse patch that undoes those exact changes
-3. Validates the patch can be applied cleanly
-4. Applies the reverse patch to your main repository (no commit created)
-5. Resets the shadow worktree back N commits to reflect the undo
+**Local git workflow:**
+1. **Analyze** shadow worktree commits (local git log)
+2. **Generate** reverse patch (local git diff) 
+3. **Validate** patch compatibility (local git apply --check)
+4. **Apply** changes to working directory (local git apply)
+5. **Sync** shadow worktree state (local git reset)
 
-**Why no commits in main repo?** The undo operation applies changes directly to your working directory, giving you full control over whether and how to commit the reverted state. The shadow worktree is reset to maintain consistency with the undone changes.
+**Benefits over LLM-based undo:**
+- ⚡ **~100x faster** - No network/inference latency
+- 🔋 **Zero energy** - No GPU cycles for model inference
+- 💰 **Cost-free** - Preserves Claude usage for creative tasks  
+- 🎯 **Bit-perfect** - Exact reversal without LLM interpretation
+- 🔒 **Offline-capable** - Works without internet connection
+
+**Local tooling philosophy:** Instead of asking "Claude, please undo your last 3 changes", we use git to analyze what Claude did and locally reverse it. This pattern can be extended to many other operations.
 
 ### Viewing Change History
 
@@ -159,6 +172,52 @@ Compare shadow worktree with main repository:
 ```bash
 git diff HEAD .claude/git/shadow-worktree/
 ```
+
+## Future Possibilities
+
+The git integration foundation enables many advanced workflows:
+
+### Multi-Agent Coordination
+```bash
+# Agent 1 works on feature A
+claude-code-agent-1 --task="implement authentication"
+
+# Agent 2 works on feature B  
+claude-code-agent-2 --task="add user profiles"
+
+# Merge agent changes with conflict resolution
+git merge shadow-worktree-agent-1 shadow-worktree-agent-2
+```
+
+### Training Dataset Generation
+```bash
+# Export high-quality AI coding examples
+git log --format='%H %s' .claude/git/shadow-worktree/ | \
+  claude-export-dataset --output=ai-coding-examples.jsonl
+
+# Create before/after training pairs
+claude-generate-training-pairs --commits=last-100 --format=instruction-following
+```
+
+### Advanced Change Analysis
+```bash
+# Analyze AI coding patterns
+git log --stat .claude/git/shadow-worktree/ | claude-analyze-patterns
+
+# Generate development insights  
+claude-git-insights --timeframe=last-month --breakdown=by-tool
+```
+
+### Collaborative Review Workflows
+```bash
+# Share AI changes for team review
+git format-patch main..shadow-worktree | claude-create-review-pr
+
+# Cherry-pick approved AI changes
+git cherry-pick shadow-worktree~3..shadow-worktree~1
+```
+
+These examples show how the git foundation can power sophisticated AI development workflows that would be impossible with traditional prompt-based approaches.
 
 ## Component Dependencies
 
@@ -328,14 +387,15 @@ tests/
 
 ### Saga Pattern Architecture
 
-claude-git is built using the saga pattern for reliable effect management:
+claude-git is built using the [claude-saga](https://pypi.org/project/claude-saga/) framework for reliable effect management:
 
 - **Atomic Sagas**: Single-purpose operations (validate, create, sync)
 - **Composition Sagas**: Orchestrate multiple atomic sagas
 - **Effect System**: Call, Put, Select, Log, Stop, Complete effects
 - **Testability**: Easy to test with minimal mocking
+- **Reliability**: Transactional semantics for complex operations
 
-For more details, see the [claude-saga documentation](https://pypi.org/project/claude-saga/).
+The saga pattern ensures that complex git operations (like worktree synchronization) are reliable and easy to reason about, making the foundation solid for building advanced local tooling.
 
 ## License
 
@@ -343,6 +403,9 @@ MIT
 
 ---
 
-For more information about Claude Code hooks and slash commands:
-- [Claude Code Hooks Documentation](https://docs.anthropic.com/en/docs/claude-code/hooks)  
-- [Claude Code Slash Commands Documentation](https://docs.anthropic.com/en/docs/claude-code/slash-commands)
+**Related Resources:**
+- [claude-saga Framework](https://pypi.org/project/claude-saga/) - Effect-based programming for reliable operations
+- [Claude Code Hooks Documentation](https://docs.anthropic.com/en/docs/claude-code/hooks) - Hook integration guide
+- [Claude Code Slash Commands Documentation](https://docs.anthropic.com/en/docs/claude-code/slash-commands) - Custom command creation
+
+**Get Started**: The git integration provides a foundation for building sophisticated local AI development tools. Start with the basic tracking hooks, explore the `/undo` command, then build your own local operations on top of the git foundation.
