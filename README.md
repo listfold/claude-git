@@ -8,26 +8,26 @@ Built using the [claude-saga](https://pypi.org/project/claude-saga/) framework f
 
 claude-git works by creating a worktree (essentially a clone of your git repo, with its own git-history).
 
-Any changes made by claude-code to the main repo are also made in the shadow worktree as discreet commits.
-
-Importantly the main-repo's git history is untouched, while the shadow worktree records each change as a commit.
+Importantly the main-repo's git history is untouched, while the shadow worktree records each change made by Claude-Code as a commit.
 
 With this system in place claude-git enables some nifty features:
 
-1. **Automatic Change Tracking** - Comprehensive audit trail of AI modifications in separate worktrees
-2. **Local Tool Integration** - Fast, energy-efficient operations using git instead of LLM calls  
-3. **Multi-Agent & Human-Agent Coordination** - Git can be the foundation for multiple AI agents to collaborate on shared codebases (just like humans).
-4. **Dataset Generation** - Export AI-assisted changes for training data and analysis
-5. **Advanced Workflows** - Cherry-picking, branching, and merging AI changes independently
+1. **Automatic Change Tracking** - Comprehensive record of AI modifications.
+2. **Local Tool Integration** - Fast, energy-efficient operations using git instead of LLM calls, this package includes an `/undo` slash command to demonstrate.
+4. **Dataset Generation** - Option to Export/Share AI-assisted changes for training data and analysis
 
 ## Why Git Integration?
 
-**Local > Remote**: The `/undo` command demonstrates the power of local tooling - it uses git operations instead of asking the LLM to reverse its changes. This approach is:
+The main reason for creating this package was the feeling of waste when prompting claude-code to "undo" its work, this seems wasteful when normally git would be fine for this.
+
+So this package includes an `/undo` slash-command to show the power of local tooling.
+
+This approach is:
 
 - ⚡ **Faster** - No network roundtrips or LLM processing time
 - 🔋 **Energy Efficient** - No electricity used for model inference  
 - 💰 **Cost Effective** - Saves Claude usage for more important tasks
-- 🎯 **Precise** - Exact reversal of changes without interpretation errors
+- 🎯 **Precise** - Exact reversal of changes without interpretation errors, most of the time it's only the last change that is undone.
 - 🔧 **Extensible** - Enables building sophisticated local workflows using the power of git
 
 ## How It Works
