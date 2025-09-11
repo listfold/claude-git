@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "DEBUG_PYCHARM=1 uv run --with pydevd-pycharm==251.23774.444 python -m claude_git.session_start",
+            "description": "Initialize shadow worktree for tracking Claude changes (PYCHARM DEBUG MODE)"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "DEBUG_PYCHARM=1 uv run --with pydevd-pycharm==251.23774.444 python -m claude_git.post_tool_use",
+            "description": "Commit Claude's file changes to shadow worktree (PYCHARM DEBUG MODE)"
+          }
+        ]
+      }
+    ]
+  }
+}
