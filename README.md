@@ -10,6 +10,9 @@ claude-git works by creating a worktree (essentially a clone of your git repo, w
 
 Importantly the main-repo's git history is untouched, while the shadow worktree records each change made by Claude-Code as a commit.
 
+A unique feature is the shadow worktree is created inside the existing project, ensuring the hook is scoped only to the claude-code project and git repo it is running in.
+(it's conventional to create worktrees outside an existing repo to avoid accidentally committing a nested repo, claude-git avoids this problem)
+
 With this system in place claude-git enables some nifty features:
 
 1. **Automatic Change Tracking** - Comprehensive record of AI modifications.
@@ -18,17 +21,9 @@ With this system in place claude-git enables some nifty features:
 
 ## Why Git Integration?
 
-The main reason for creating this package was the feeling of waste when prompting claude-code to "undo" its work, this seems wasteful when normally git would be fine for this.
+The main reason for creating this package was the feeling of waste when prompting claude-code to "undo" its work, invoking an LLM to do this seems wasteful when git would be far more efficient.
 
 So this package includes an `/undo` slash-command to show the power of local tooling.
-
-This approach is:
-
-- ⚡ **Faster** - No network roundtrips or LLM processing time
-- 🔋 **Energy Efficient** - No electricity used for model inference  
-- 💰 **Cost Effective** - Saves Claude usage for more important tasks
-- 🎯 **Precise** - Exact reversal of changes without interpretation errors, most of the time it's only the last change that is undone.
-- 🔧 **Extensible** - Enables building sophisticated local workflows using the power of git
 
 ## How It Works
 
@@ -57,6 +52,21 @@ your-project/
 
 ## Installation
 
+### Prerequisites
+
+- **Git repository**: Your project must be a git repository (`git init`)
+- **uv**: Python package manager must be installed and initialized in your project
+  
+  ```bash
+  # Install uv if you haven't already
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  
+  # Initialize uv in your project (creates .venv)
+  uv init --no-workspace
+  ```
+  
+  **Note**: Your project doesn't need to be a Python project, but `uv` must be initialized to run the hooks.
+
 ### 1. Install the Package
 
 ```bash
@@ -65,7 +75,9 @@ uv pip install claude-git
 
 ### 2. Configure Hooks and Commands
 
-Create or update `.claude/settings.json` in your project root (or `~/.claude/settings.json` for global setup):
+Create or update `.claude/settings.json` in your project root (or `~/.claude/settings.json` for global setup).
+
+**Important**: The hooks use `uv run` to execute the commands within the virtual environment:
 
 ```json
 {
@@ -76,7 +88,7 @@ Create or update `.claude/settings.json` in your project root (or `~/.claude/set
         "hooks": [
           {
             "type": "command",
-            "command": "claude-git-init",
+            "command": "uv run claude-git-init",
             "description": "Initialize shadow worktree for tracking Claude changes"
           }
         ]
@@ -88,7 +100,7 @@ Create or update `.claude/settings.json` in your project root (or `~/.claude/set
         "hooks": [
           {
             "type": "command", 
-            "command": "claude-git-commit",
+            "command": "uv run claude-git-commit",
             "description": "Commit Claude's file changes to shadow worktree"
           }
         ]
@@ -128,7 +140,7 @@ Once configured, claude-git works automatically:
 
 ### Local Git Operations (Example: Undo)
 
-The `/undo` slash command showcases **local-first tooling** - fast git operations instead of slow LLM calls:
+The `/undo` slash command showcases **local-first tooling**:
 
 ```bash
 /undo           # Undo last change
@@ -136,21 +148,15 @@ The `/undo` slash command showcases **local-first tooling** - fast git operation
 /undo 10        # Undo last 10 changes
 ```
 
-**Local git workflow:**
-1. **Analyze** shadow worktree commits (local git log)
-2. **Generate** reverse patch (local git diff) 
-3. **Validate** patch compatibility (local git apply --check)
-4. **Apply** changes to working directory (local git apply)
-5. **Sync** shadow worktree state (local git reset)
+This approach is:
 
-**Benefits over LLM-based undo:**
-- ⚡ **~100x faster** - No network/inference latency
-- 🔋 **Zero energy** - No GPU cycles for model inference
-- 💰 **Cost-free** - Preserves Claude usage for creative tasks  
-- 🎯 **Bit-perfect** - Exact reversal without LLM interpretation
-- 🔒 **Offline-capable** - Works without internet connection
-
-**Local tooling philosophy:** Instead of asking "Claude, please undo your last 3 changes", we use git to analyze what Claude did and locally reverse it. This pattern can be extended to many other operations.
+- ⚡ **Faster** - No network roundtrips or LLM processing time
+- 🔋 **Energy Efficient** - No electricity used for model inference
+- 💰 **Cost Effective** - Saves Claude usage for more important tasks
+- 🎯 **Precise** - Exact reversal of changes without interpretation errors, most of the time it's only the last change that is undone.
+- 🔧 **Extensible** - Enables building sophisticated local workflows using the power of git
+- 
+**Local tooling philosophy:** Instead of asking "Claude, please undo your last 3 changes", we use git to analyze what Claude did and locally reverse it.
 
 ### Viewing Change History
 
@@ -173,58 +179,13 @@ Compare shadow worktree with main repository:
 git diff HEAD .claude/git/shadow-worktree/
 ```
 
-## Future Possibilities
-
-The git integration foundation enables many advanced workflows:
-
-### Multi-Agent Coordination
-```bash
-# Agent 1 works on feature A
-claude-code-agent-1 --task="implement authentication"
-
-# Agent 2 works on feature B  
-claude-code-agent-2 --task="add user profiles"
-
-# Merge agent changes with conflict resolution
-git merge shadow-worktree-agent-1 shadow-worktree-agent-2
-```
-
-### Training Dataset Generation
-```bash
-# Export high-quality AI coding examples
-git log --format='%H %s' .claude/git/shadow-worktree/ | \
-  claude-export-dataset --output=ai-coding-examples.jsonl
-
-# Create before/after training pairs
-claude-generate-training-pairs --commits=last-100 --format=instruction-following
-```
-
-### Advanced Change Analysis
-```bash
-# Analyze AI coding patterns
-git log --stat .claude/git/shadow-worktree/ | claude-analyze-patterns
-
-# Generate development insights  
-claude-git-insights --timeframe=last-month --breakdown=by-tool
-```
-
-### Collaborative Review Workflows
-```bash
-# Share AI changes for team review
-git format-patch main..shadow-worktree | claude-create-review-pr
-
-# Cherry-pick approved AI changes
-git cherry-pick shadow-worktree~3..shadow-worktree~1
-```
-
-These examples show how the git foundation can power sophisticated AI development workflows that would be impossible with traditional prompt-based approaches.
-
 ## Component Dependencies
 
 ### Required for Basic Tracking
 - ✅ **SessionStart hook** - Creates and syncs shadow worktree  
 - ✅ **PostToolUse hook** - Commits Claude's changes
 - ✅ **Git repository** - Must be initialized (`git init`)
+- ✅ **uv environment** - Must be initialized (`uv init --no-workspace`)
 
 ### Optional for Undo Functionality  
 - 🔧 **Undo slash command** - Reverses Claude changes
@@ -232,7 +193,7 @@ These examples show how the git foundation can power sophisticated AI developmen
 
 ### Automatic Dependencies
 - 📦 **claude-saga framework** - Effect-based saga pattern implementation
-- 📦 **uv or pip** - Python package management
+- 📦 **Python virtual environment** - Created by `uv init`
 - 📦 **.claude/git/** directory - Auto-created by SessionStart hook  
 - 📦 **.gitignore entry** - Auto-added by SessionStart hook
 
@@ -271,8 +232,8 @@ git init  # Initialize git in your project root
 ```json
 {
   "hooks": {
-    "SessionStart": [{"matcher": "*", "hooks": [{"type": "command", "command": "claude-git-init"}]}],
-    "PostToolUse": [{"matcher": "Write|Edit|MultiEdit|NotebookEdit", "hooks": [{"type": "command", "command": "claude-git-commit"}]}]
+    "SessionStart": [{"matcher": "*", "hooks": [{"type": "command", "command": "uv run claude-git-init"}]}],
+    "PostToolUse": [{"matcher": "Write|Edit|MultiEdit|NotebookEdit", "hooks": [{"type": "command", "command": "uv run claude-git-commit"}]}]
   }
 }
 ```
@@ -287,7 +248,7 @@ git init  # Initialize git in your project root
         "hooks": [
           {
             "type": "command",
-            "command": "claude-git-init", 
+            "command": "uv run claude-git-init", 
             "description": "Initialize shadow worktree for tracking Claude changes"
           }
         ]
@@ -299,38 +260,10 @@ git init  # Initialize git in your project root
         "hooks": [
           {
             "type": "command",
-            "command": "claude-git-commit",
+            "command": "uv run claude-git-commit",
             "description": "Commit Claude's file changes to shadow worktree"
           }
         ]
-      }
-    ]
-  }
-}
-```
-
-### Advanced Configuration (Custom Tool Matching)
-```json
-{
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "*",
-        "hooks": [{"type": "command", "command": "claude-git-init"}]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write",
-        "hooks": [{"type": "command", "command": "claude-git-commit"}]
-      },
-      {
-        "matcher": "Edit|MultiEdit", 
-        "hooks": [{"type": "command", "command": "claude-git-commit"}]
-      },
-      {
-        "matcher": "NotebookEdit",
-        "hooks": [{"type": "command", "command": "claude-git-commit"}]
       }
     ]
   }
@@ -389,7 +322,7 @@ tests/
 
 claude-git is built using the [claude-saga](https://pypi.org/project/claude-saga/) framework for reliable effect management:
 
-- **Atomic Sagas**: Single-purpose operations (validate, create, sync)
+- **Atomic Sagas**: Single-purpose operations, even side effects are made deterministic
 - **Composition Sagas**: Orchestrate multiple atomic sagas
 - **Effect System**: Call, Put, Select, Log, Stop, Complete effects
 - **Testability**: Easy to test with minimal mocking
