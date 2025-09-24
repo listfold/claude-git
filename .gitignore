@@ -12,3 +12,4 @@ wheels/
 .idea
 .python-version
 uv.lock
+.claude/git/

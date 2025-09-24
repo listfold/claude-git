@@ -33,6 +33,7 @@ from claude_saga import (
 )
 
 from .shared_sagas import (
+    pycharm_debug_saga,
     basic_git_setup_saga,
     detect_and_sync_changes_saga,
     verify_shadow_worktree_exists_saga,
@@ -49,17 +50,8 @@ class PostToolUseSagaState(BaseSagaState):
     shadow_dir: Path | None = None
     # Tool-specific state
     tool_name: str | None = None
-    tool_input: dict | None = None
+    input_data: dict | None = None
     tool_response: dict | None = None
-
-
-def pycharm_debug_saga():
-    """Connect to PyCharm debugger if DEBUG_PYCHARM env var is set"""
-    if os.environ.get("DEBUG_PYCHARM") != "1":
-        return
-    connected = yield Call(connect_pycharm_debugger_effect)
-    if not connected:
-        yield Stop("Failed to connect to PyCharm debugger")
 
 
 def validate_and_setup_saga():
@@ -102,13 +94,13 @@ def build_commit_message(state):
 
     # Extract file information if available
     file_info = ""
-    if state.tool_input:
-        if "file_path" in state.tool_input:
-            file_info = f": {state.tool_input['file_path']}"
-        elif "path" in state.tool_input:
-            file_info = f": {state.tool_input['path']}"
-        elif "files" in state.tool_input:
-            files = state.tool_input["files"]
+    if state.input_data:
+        if "file_path" in state.input_data:
+            file_info = f": {state.input_data['file_path']}"
+        elif "path" in state.input_data:
+            file_info = f": {state.input_data['path']}"
+        elif "files" in state.input_data:
+            files = state.input_data["files"]
             if isinstance(files, list) and files:
                 max_files_display = 3
                 file_info = f": {', '.join(files[:max_files_display])}"
@@ -121,21 +113,21 @@ def build_commit_message(state):
 def main_saga():
     """Main saga for PostToolUse hook"""
     # Input validation and parsing
+    yield from pycharm_debug_saga()
     yield from validate_input_saga()
-    # Parse JSON input
+
+    # Parse JSON input - saves hook input to input_data attr
     yield from parse_json_saga()
 
     # Extract tool-specific information from parsed input
     state = yield Select()
-    tool_name = state.hook_input.get("tool_name")
-    tool_input = state.hook_input.get("tool_input", {})
-    tool_response = state.hook_input.get("tool_response", {})
+    tool_name = state.input_data.get("tool_name")
+    tool_response = state.input_data.get("tool_response", {})
 
     # Store tool information in state
     yield Put(
         {
             "tool_name": tool_name,
-            "tool_input": tool_input,
             "tool_response": tool_response,
             "git_root": None,
             "claude_git_dir": None,
@@ -147,7 +139,6 @@ def main_saga():
     )
 
     # Run the hook workflow
-    yield from pycharm_debug_saga()
     yield from validate_and_setup_saga()
     yield from should_track_tool_saga()
     yield from detect_and_commit_changes_saga()
