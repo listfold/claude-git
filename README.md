@@ -25,6 +25,12 @@ The main reason for creating this package was the feeling of waste when promptin
 
 So this package includes an `/undo` slash-command to show the power of local tooling.
 
+## Demo
+In this screenshot, we prompt claude to create a file called Foo.md and then use `/undo 1` to revert the last change.
+
+![](https://private-user-images.githubusercontent.com/67430486/493385837-9c4e5528-eded-4148-b23e-55f954cadc2a.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTg3MjMzMTEsIm5iZiI6MTc1ODcyMzAxMSwicGF0aCI6Ii82NzQzMDQ4Ni80OTMzODU4MzctOWM0ZTU1MjgtZWRlZC00MTQ4LWIyM2UtNTVmOTU0Y2FkYzJhLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA5MjQlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwOTI0VDE0MTAxMVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY1MWIzNzY0M2ZhYmFkMGRhNmI3MjVjMmFmNDFlMGQ5MjU5NmU5OGUzYzdjMGEzZTgwMzkyYzI3MThlNDRiNjcmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.13DYTkg9jTYSs8TA1d5-9b7OvyXNYrKYq64rAqV95R4)
+
+
 ## How It Works
 
 ### Workflow
