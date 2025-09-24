@@ -55,7 +55,7 @@ your-project/
 ### Prerequisites
 
 - **Git repository**: Your project must be a git repository (`git init`)
-- **uv**: Python package manager must be installed and initialized in your project
+- **uv**: You must be able to run `uv`.
   
   ```bash
   # Install uv if you haven't already
@@ -115,17 +115,10 @@ Create or update `.claude/settings.json` in your project root (or `~/.claude/set
 The `/undo` slash command allows you to reverse Claude's changes:
 
 ```bash
-# For project-specific installation
+# Copy the command files to your project
 mkdir -p .claude/commands
-cp claude_git/undo.py .claude/commands/
-cp .claude/commands/undo.md .claude/commands/
-chmod +x .claude/commands/undo.py
-
-# For global installation (available in all projects)  
-mkdir -p ~/.claude/commands
-cp claude_git/undo.py ~/.claude/commands/
-cp .claude/commands/undo.md ~/.claude/commands/
-chmod +x ~/.claude/commands/undo.py
+cp claude_git/undo.md .claude/commands/
+chmod +x claude_git/undo.py
 ```
 
 ## Usage
