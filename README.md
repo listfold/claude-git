@@ -6,16 +6,16 @@ Built using the [claude-saga](https://pypi.org/project/claude-saga/) framework f
 
 ## Core Features
 
-claude-git works by creating a worktree (essentially a clone of your git repo, with its own git-history).
+Claude-git works by creating a worktree (essentially a clone of your git repo, with its own git-history).
 
-Importantly the main-repo's git history is untouched, while the shadow worktree records each change made by Claude-Code as a commit.
+importantly the main-repo's git history is untouched, while the shadow worktree records each change made by Claude-Code as a commit.
 
 A unique feature is the shadow worktree is created inside the existing project, ensuring the hook is scoped only to the claude-code project and git repo it is running in.
-(it's conventional to create worktrees outside an existing repo to avoid accidentally committing a nested repo, claude-git avoids this problem)
+(This is unique because it is more conventional to create worktrees outside an existing repo to avoid accidentally committing a nested repo, claude-git avoids this problem by including the shadow worktree in the main repo's .gitignore)
 
-With this system in place claude-git enables some nifty features:
+With this system in place claude-git enables some powerful features:
 
-1. **Automatic Change Tracking** - Comprehensive record of AI modifications.
+1. **Automatic Change Tracking** - Comprehensive & colocated record of AI modifications.
 2. **Local Tool Integration** - Fast, energy-efficient operations using git instead of LLM calls, this package includes an `/undo` slash command to demonstrate.
 4. **Dataset Generation** - Option to Export/Share AI-assisted changes for training data and analysis
 
