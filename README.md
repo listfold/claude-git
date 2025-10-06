@@ -1,23 +1,22 @@
 # claude-git
 
-A git integration for Claude Code that tracks AI-agent changes in a separate shadow worktree.
+A git integration for Claude Code that tracks changes made by claude code changes in a separate [worktree](https://git-scm.com/docs/git-worktree).
 
-Built using the [claude-saga](https://pypi.org/project/claude-saga/) framework for reliable effect-based programming.
+Built using [claude-saga](https://pypi.org/project/claude-saga/) framework for reliable effect-based programming.
 
 ## Core Features
 
-Claude-git works by creating a worktree (essentially a clone of your git repo, with its own git-history).
+Claude-git works by first creating a worktree (a clone of your git repo, with its own git-history).
 
 importantly the main-repo's git history is untouched, while the shadow worktree records each change made by Claude-Code as a commit.
 
 A unique feature is the shadow worktree is created inside the existing project, ensuring the hook is scoped only to the claude-code project and git repo it is running in.
-(This is unique because it is more conventional to create worktrees outside an existing repo to avoid accidentally committing a nested repo, claude-git avoids this problem by including the shadow worktree in the main repo's .gitignore)
+(It is more conventional to create worktrees outside an existing repo to avoid accidentally committing a nested repo, claude-git avoids this problem by including the shadow worktree in the main repo's .gitignore)
 
-With this system in place claude-git enables some powerful features:
+With this system in place claude-git enables some powerful features, for example:
 
-1. **Automatic Change Tracking** - Comprehensive & colocated record of AI modifications.
+1. **Automatic Change Tracking** - Comprehensive & colocated record of AI modifications to a codebase.
 2. **Local Tool Integration** - Fast, energy-efficient operations using git instead of LLM calls, this package includes an `/undo` slash command to demonstrate.
-4. **Dataset Generation** - Option to Export/Share AI-assisted changes for training data and analysis
 
 ## Why Git Integration?
 
