@@ -27,7 +27,7 @@ So this package includes an `/undo` slash-command to show the power of local too
 ## Demo
 In this screenshot, we prompt claude to create a file called Foo.md and then use `/undo 1` to revert the last change.
 
-![](./images/demo_image.png)
+![](claude_git/images/demo_image.png)
 
 ## How It Works
 
