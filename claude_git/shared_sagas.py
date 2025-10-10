@@ -214,6 +214,55 @@ def generate_cross_diff_saga():
     yield Put({"cross_diff": cross_diff})
 
 
+def get_shadow_head_saga():
+    """Get the current HEAD commit hash of the shadow worktree"""
+    state = yield Select()
+
+    # Change to shadow worktree to get its HEAD
+    original_dir = state.cwd if hasattr(state, 'cwd') else state.git_root
+    yield Call(change_directory_effect, str(state.shadow_dir))
+
+    # Get HEAD commit hash
+    head_result = yield Call(run_command_effect, "git rev-parse HEAD")
+
+    # Return to original directory
+    yield Call(change_directory_effect, original_dir)
+
+    if not head_result or head_result.returncode != 0:
+        yield Stop("Failed to get shadow worktree HEAD")
+
+    shadow_head = head_result.stdout.strip()
+    yield Put({"shadow_head": shadow_head})
+    yield Log("debug", f"Shadow worktree HEAD: {shadow_head}")
+
+
+def generate_main_to_shadow_diff_saga():
+    """Generate diff from main worktree (current state) to shadow HEAD"""
+    state = yield Select()
+
+    # Ensure we're in the main worktree
+    yield Call(change_directory_effect, state.git_root)
+
+    # Generate diff from shadow HEAD to current main worktree state
+    # This captures all changes (committed + uncommitted) vs shadow's state
+    # Using native git diff respects .gitignore and git's file tracking
+    diff_result = yield Call(run_command_effect, f"git diff {state.shadow_head}")
+
+    cross_diff = ""
+
+    if diff_result and diff_result.returncode == 0:
+        cross_diff = diff_result.stdout.strip()
+        if cross_diff:
+            yield Log("info", "Changes detected between main worktree and shadow worktree")
+        else:
+            yield Log("info", "No changes detected between main worktree and shadow worktree")
+    else:
+        # Error occurred
+        yield Stop("Failed to generate diff between main and shadow worktree")
+
+    yield Put({"cross_diff": cross_diff})
+
+
 # Shadow worktree management sagas
 
 
@@ -375,18 +424,23 @@ def sync_worktrees_saga():
 
 
 def detect_and_sync_changes_saga(commit_message_builder=None):
-    """Detect changes and sync them to shadow worktree with optional commit"""
+    """Detect changes and sync them to shadow worktree with optional commit
+
+    Uses native git diff to compare main worktree (current state with all uncommitted
+    changes) against shadow worktree HEAD. If differences exist, resets shadow to clean
+    state, applies the diff, and commits.
+    """
     state = yield Select()
 
     # Navigate to git root for operations
     yield Call(change_directory_effect, state.git_root)
 
-    # Create archive and capture current state
-    yield from cleanup_archive_saga()
-    yield from create_main_archive_saga()
-    yield from capture_uncommitted_changes_saga()
-    yield from apply_uncommitted_to_archive_saga()  # Apply uncommitted to archive first
-    yield from generate_cross_diff_saga()
+    # Get shadow worktree's current HEAD commit
+    yield from get_shadow_head_saga()
+
+    # Generate diff from main worktree to shadow HEAD
+    # This captures all changes (committed + uncommitted) using native git diff
+    yield from generate_main_to_shadow_diff_saga()
 
     # Check if there are differences
     if state.cross_diff:
@@ -394,6 +448,9 @@ def detect_and_sync_changes_saga(commit_message_builder=None):
 
         # Change to shadow worktree
         yield Call(change_directory_effect, str(state.shadow_dir))
+
+        # Reset shadow to clean state (defensive: ensures clean apply)
+        yield from reset_shadow_worktree_saga()
 
         # Apply changes
         yield from apply_cross_diff_saga()
@@ -409,5 +466,5 @@ def detect_and_sync_changes_saga(commit_message_builder=None):
     else:
         yield Log("info", "No changes detected between main repo and shadow worktree")
 
-    # Cleanup
-    yield from finalize_sync_saga()
+    # Return to git root
+    yield Call(change_directory_effect, state.git_root)
