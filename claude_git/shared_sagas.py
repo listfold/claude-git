@@ -289,14 +289,12 @@ def apply_cross_diff_saga():
     diff_file = state.shadow_dir / "temp_cross_repo_sync.patch"
     yield Call(write_file_effect, diff_file, state.cross_diff)
 
+
+    yield Log("info", f'DIFF FILE IS: {diff_file}')
     # Apply the cross-repo patch
     apply_result = yield Call(
         run_command_effect, f'git apply --reject --ignore-whitespace "{diff_file}"', capture_output=False
     )
-
-    # Clean up temp file
-    if diff_file.exists():
-        diff_file.unlink()
 
     if apply_result and apply_result.returncode != 0:
         yield Log("warning", "Some patch chunks may have failed - manual review may be needed")
@@ -448,9 +446,6 @@ def detect_and_sync_changes_saga(commit_message_builder=None):
 
         # Change to shadow worktree
         yield Call(change_directory_effect, str(state.shadow_dir))
-
-        # Reset shadow to clean state (defensive: ensures clean apply)
-        yield from reset_shadow_worktree_saga()
 
         # Apply changes
         yield from apply_cross_diff_saga()

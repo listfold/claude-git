@@ -1,6 +1,6 @@
 [project]
 name = "claude-git"
-version = "0.1.1"
+version = "0.1.2"
 description = "Create a git worktree that tracks claude-code changes without polluting the main repo's git history"
 readme = "README.md"
 requires-python = ">=3.13"
