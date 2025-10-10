@@ -340,3 +340,5 @@ MIT
 
 **Get Started**: The git integration provides a foundation for building sophisticated local AI development tools. Start with the basic tracking hooks, explore the `/undo` command, then build your own local operations on top of the git foundation.
 
+FOO 100
+FOO 900

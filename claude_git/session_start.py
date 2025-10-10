@@ -19,21 +19,25 @@ from pathlib import Path
 
 from claude_saga import (
     BaseSagaState,
+    Call,
     Complete,
+    Log,
     Put,
     SagaRuntime,
+    Select,
     parse_json_saga,
+    run_command_effect,
     validate_input_saga,
 )
 
 from .shared_sagas import (
     change_to_git_root_saga,
     create_claude_directories_saga,
+    detect_and_sync_changes_saga,
     ensure_gitignore_saga,
     ensure_shadow_worktree_saga,
     pycharm_debug_saga,
     setup_paths_saga,
-    sync_worktrees_saga,
     validate_git_repository_saga,
     validate_repo_root_saga,
 )
@@ -62,15 +66,25 @@ def setup_and_validate_saga():
     yield from ensure_gitignore_saga()
 
 
-# ensure_shadow_worktree_saga is now imported from shared_sagas
+def cleanup_shadow_worktree_saga():
+    """Remove existing shadow worktree and prune worktree references"""
+    state = yield Select()
 
+    # Remove .claude/git directory if it exists
+    if state.claude_git_dir and state.claude_git_dir.exists():
+        yield Log("info", "Removing existing shadow worktree")
+        yield Call(run_command_effect, f'rm -rf "{state.claude_git_dir}"', capture_output=False)
 
-# All synchronization sagas are now imported from shared_sagas
+    # Prune worktree references
+    yield Call(run_command_effect, "git worktree prune", capture_output=False)
+    yield Log("info", "Cleaned up shadow worktree")
 
 
 def synchronize_main_to_shadow_saga():
     """Composition saga to synchronize shadow worktree with main repo state"""
-    yield from sync_worktrees_saga()
+    yield from detect_and_sync_changes_saga(
+        commit_message_builder=lambda state: f"Sync with main repo state (session {state.session_id})"
+    )
     yield Complete("Shadow worktree is ready for this session")
 
 
@@ -93,11 +107,17 @@ def main_saga():
         }
     )
 
-    # Complete shadow worktree setup - consolidated 4-step process
+    # Complete shadow worktree setup - fresh start each session
     yield from pycharm_debug_saga()  # Debug setup if needed
-    yield from setup_and_validate_saga()  # Step 1: Setup & validation (composition of atomic sagas)
-    yield from ensure_shadow_worktree_saga()  # Step 2: Ensure shadow worktree exists
-    yield from synchronize_main_to_shadow_saga()  # Step 3: Sync main → shadow (composition of atomic sagas)
+    yield from validate_git_repository_saga()  # Validate we're in a git repo
+    yield from validate_repo_root_saga()  # Validate we're at the repo root
+    yield from change_to_git_root_saga()  # Change to git root
+    yield from setup_paths_saga()  # Setup paths
+    yield from cleanup_shadow_worktree_saga()  # Clean up any existing shadow worktree
+    yield from create_claude_directories_saga()  # Recreate .claude/git directories
+    yield from ensure_gitignore_saga()  # Ensure .gitignore has .claude/git
+    yield from ensure_shadow_worktree_saga()  # Create new shadow worktree
+    yield from synchronize_main_to_shadow_saga()  # Sync main → shadow
 
 
 def main():
